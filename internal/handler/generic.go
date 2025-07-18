@@ -19,6 +19,19 @@ type GenericEvent struct {
 	Data      map[string]interface{} `json:"data,omitempty"`
 }
 
+type GenericTemplateData struct {
+	EventType string
+	Timestamp string
+	Data      map[string]interface{}
+}
+
+const genericTemplate = `📋 *Claude Code Hook: {{.EventType}}*
+
+⏰ **Timestamp:** {{.Timestamp}}
+{{range $key, $value := .Data}}
+**{{$key}}:** {{$value}}
+{{end}}`
+
 func NewGenericHandler(telegramClient *telegram.Client) *GenericHandler {
 	return &GenericHandler{
 		telegramClient: telegramClient,
@@ -31,13 +44,13 @@ func (h *GenericHandler) Handle(ctx context.Context, hookEvent string) error {
 		return err
 	}
 
-	templateData := templates.TemplateData{
+	templateData := GenericTemplateData{
 		EventType: event.EventType,
 		Timestamp: event.Timestamp.Format("2006-01-02 15:04:05"),
 		Data:      event.Data,
 	}
 
-	message, err := templates.RenderTemplate(templates.GenericTemplate, templateData)
+	message, err := templates.RenderTemplate("generic", genericTemplate, templateData)
 	if err != nil {
 		return err
 	}

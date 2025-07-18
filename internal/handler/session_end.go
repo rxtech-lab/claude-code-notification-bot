@@ -20,11 +20,26 @@ type SessionEndEvent struct {
 	FilesModified int       `json:"files_modified,omitempty"`
 }
 
+type SessionEndTemplateData struct {
+	EventType     string
+	Timestamp     string
+	Duration      string
+	FilesModified int
+}
+
+const sessionEndTemplate = `🏁 *Claude Code Hook: Session End*
+
+📝 **Event:** {{.EventType}}
+⏰ **Timestamp:** {{.Timestamp}}
+⏱ **Duration:** {{.Duration}}
+{{if .FilesModified}}📝 **Files Modified:** {{.FilesModified}}{{end}}`
+
 func NewSessionEndHandler(telegramClient *telegram.Client) *SessionEndHandler {
 	return &SessionEndHandler{
 		telegramClient: telegramClient,
 	}
 }
+
 
 func (h *SessionEndHandler) Handle(ctx context.Context, hookEvent string) error {
 	var event SessionEndEvent
@@ -32,14 +47,14 @@ func (h *SessionEndHandler) Handle(ctx context.Context, hookEvent string) error 
 		return err
 	}
 
-	templateData := templates.TemplateData{
+	templateData := SessionEndTemplateData{
 		EventType:     event.EventType,
 		Timestamp:     event.Timestamp.Format("2006-01-02 15:04:05"),
 		Duration:      event.Duration,
 		FilesModified: event.FilesModified,
 	}
 
-	message, err := templates.RenderTemplate(templates.SessionEndTemplate, templateData)
+	message, err := templates.RenderTemplate("sessionEnd", sessionEndTemplate, templateData)
 	if err != nil {
 		return err
 	}

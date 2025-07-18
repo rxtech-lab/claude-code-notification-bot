@@ -20,11 +20,26 @@ type SessionStartEvent struct {
 	GitRepo          bool      `json:"git_repo"`
 }
 
+type SessionStartTemplateData struct {
+	EventType        string
+	Timestamp        string
+	WorkingDirectory string
+	GitRepo          bool
+}
+
+const sessionStartTemplate = `🚀 *Claude Code Hook: Session Start*
+
+📝 **Event:** {{.EventType}}
+⏰ **Timestamp:** {{.Timestamp}}
+🗺️ **Working Directory:** {{.WorkingDirectory}}
+{{if .GitRepo}}🔗 **Git Repository:** Yes{{else}}🔗 **Git Repository:** No{{end}}`
+
 func NewSessionStartHandler(telegramClient *telegram.Client) *SessionStartHandler {
 	return &SessionStartHandler{
 		telegramClient: telegramClient,
 	}
 }
+
 
 func (h *SessionStartHandler) Handle(ctx context.Context, hookEvent string) error {
 	var event SessionStartEvent
@@ -32,14 +47,14 @@ func (h *SessionStartHandler) Handle(ctx context.Context, hookEvent string) erro
 		return err
 	}
 
-	templateData := templates.TemplateData{
+	templateData := SessionStartTemplateData{
 		EventType:        event.EventType,
 		Timestamp:        event.Timestamp.Format("2006-01-02 15:04:05"),
 		WorkingDirectory: event.WorkingDirectory,
 		GitRepo:          event.GitRepo,
 	}
 
-	message, err := templates.RenderTemplate(templates.SessionStartTemplate, templateData)
+	message, err := templates.RenderTemplate("sessionStart", sessionStartTemplate, templateData)
 	if err != nil {
 		return err
 	}

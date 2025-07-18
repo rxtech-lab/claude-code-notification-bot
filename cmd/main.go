@@ -3,41 +3,63 @@ package main
 import (
 	"bufio"
 	"context"
+	"flag"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"strings"
 
+	"github.com/rxtech-lab/claude-code-telegram-notification/internal/config"
 	"github.com/rxtech-lab/claude-code-telegram-notification/internal/handler"
 	"github.com/rxtech-lab/claude-code-telegram-notification/internal/telegram"
 )
 
 func main() {
-	// Check if user wants to run chat client
-	if len(os.Args) > 1 && strings.ToLower(os.Args[1]) == "chat-client" {
+	// Setup file logging
+	setupFileLogging()
+
+	// Parse command line arguments
+	var (
+		token  = flag.String("token", "", "Telegram bot token (for initialization)")
+		chatID = flag.String("chatid", "", "Telegram chat ID (for initialization)")
+		help   = flag.Bool("help", false, "Show help message")
+	)
+	flag.Parse()
+
+	// Show help if requested
+	if *help {
+		showHelp()
+		return
+	}
+
+	// Handle initialization with --token and --chatid
+	if *token != "" && *chatID != "" {
+		initializeConfig(*token, *chatID)
+		return
+	}
+
+	// Check if user wants to run chat client (non-flag arguments)
+	args := flag.Args()
+	if len(args) > 0 && strings.ToLower(args[0]) == "chat-client" {
 		runChatClient()
 		return
 	}
 
-	// Read environment variables
-	botToken := os.Getenv("CLAUDE_CODE_TELEGRAM_BOT_TOKEN")
-	if botToken == "" {
-		log.Fatal("CLAUDE_CODE_TELEGRAM_BOT_TOKEN environment variable is required")
-	}
-
-	chatID := os.Getenv("CLAUDE_CODE_TELEGRAM_CHAT_ID")
-	if chatID == "" {
-		log.Fatal("CLAUDE_CODE_TELEGRAM_CHAT_ID environment variable is required")
+	// Load configuration from file
+	cfg, err := config.LoadConfig()
+	if err != nil {
+		log.Fatalf("Failed to load config: %v", err)
 	}
 
 	// Parse command line arguments for hook type
 	hookType := "generic"
-	if len(os.Args) > 1 {
-		hookType = strings.ToLower(os.Args[1])
+	if len(args) > 0 {
+		hookType = strings.ToLower(args[0])
 	}
 
 	// Create Telegram client
-	telegramClient := telegram.NewClient(botToken, chatID)
+	telegramClient := telegram.NewClient(cfg.BotToken, cfg.ChatID)
 
 	// Create appropriate handler based on hook type
 	var hookHandler handler.Handler
@@ -61,7 +83,6 @@ func main() {
 	log.Println("Hook handler created:", hookType)
 	// Read hook data from stdin
 	scanner := bufio.NewScanner(os.Stdin)
-	log.Println("Reading hook data from stdin")
 	var lines []string
 	for scanner.Scan() {
 		lines = append(lines, scanner.Text())
@@ -77,7 +98,6 @@ func main() {
 
 	// Join all lines to form the complete JSON
 	hookData := strings.Join(lines, "\n")
-	log.Println("Hook data:", hookData)
 
 	// Handle the hook event
 	ctx := context.Background()
@@ -88,15 +108,85 @@ func main() {
 	fmt.Println("Notification sent successfully")
 }
 
+func setupFileLogging() {
+	// Get log file path from environment variable, default to ~/claude-code-notification/notification.log
+	logFilePath := os.Getenv("CLAUDE_CODE_LOG_FILE")
+	if logFilePath == "" {
+		configDir, err := config.GetConfigDir()
+		if err != nil {
+			log.Printf("Warning: Could not get config directory: %v", err)
+			logFilePath = "notification.log"
+		} else {
+			// Create config directory if it doesn't exist
+			if err := os.MkdirAll(configDir, 0755); err != nil {
+				log.Printf("Warning: Could not create config directory: %v", err)
+				logFilePath = "notification.log"
+			} else {
+				logFilePath = configDir + "/notification.log"
+			}
+		}
+	}
+
+	// Create or open log file
+	logFile, err := os.OpenFile(logFilePath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+	if err != nil {
+		log.Printf("Warning: Could not open log file %s: %v", logFilePath, err)
+		return
+	}
+
+	// Set log output to both file and stdout
+	multiWriter := io.MultiWriter(os.Stdout, logFile)
+	log.SetOutput(multiWriter)
+	log.SetFlags(log.LstdFlags | log.Lshortfile)
+	
+	log.Printf("Logging to file: %s", logFilePath)
+}
+
+func initializeConfig(token, chatID string) {
+	cfg := &config.Config{
+		BotToken: token,
+		ChatID:   chatID,
+	}
+
+	if err := config.SaveConfig(cfg); err != nil {
+		log.Fatalf("Failed to save config: %v", err)
+	}
+
+	configFile, _ := config.GetConfigFilePath()
+	fmt.Printf("Configuration saved to: %s\n", configFile)
+	fmt.Println("You can now run the application without --token and --chatid arguments.")
+}
+
+func showHelp() {
+	fmt.Println("Claude Code Telegram Notification")
+	fmt.Println()
+	fmt.Println("Usage:")
+	fmt.Println("  Initialize configuration:")
+	fmt.Println("    ./claude-code-telegram-notification --token=<bot_token> --chatid=<chat_id>")
+	fmt.Println()
+	fmt.Println("  Run notification hooks:")
+	fmt.Println("    ./claude-code-telegram-notification [hook_type]")
+	fmt.Println("    Hook types: user-prompt-submit, tool-call, file-write, session-start, session-end, notification")
+	fmt.Println()
+	fmt.Println("  Run chat client:")
+	fmt.Println("    ./claude-code-telegram-notification chat-client")
+	fmt.Println()
+	fmt.Println("Environment variables:")
+	fmt.Println("  CLAUDE_CODE_LOG_FILE - Custom log file path (default: ~/claude-code-notification/notification.log)")
+}
+
 func runChatClient() {
-	// Read bot token from environment
-	botToken := os.Getenv("CLAUDE_CODE_TELEGRAM_BOT_TOKEN")
-	if botToken == "" {
-		log.Fatal("CLAUDE_CODE_TELEGRAM_BOT_TOKEN environment variable is required")
+	// Setup file logging for chat client too
+	setupFileLogging()
+
+	// Load configuration from file
+	cfg, err := config.LoadConfig()
+	if err != nil {
+		log.Fatalf("Failed to load config: %v", err)
 	}
 
 	// Create polling client
-	client := telegram.NewPollingClient(botToken)
+	client := telegram.NewPollingClient(cfg.BotToken)
 
 	// Start chat ID discovery
 	client.StartChatIDDiscovery()

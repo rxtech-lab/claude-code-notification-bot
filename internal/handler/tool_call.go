@@ -22,11 +22,30 @@ type ToolCallEvent struct {
 	Error     string    `json:"error,omitempty"`
 }
 
+type ToolCallTemplateData struct {
+	EventType string
+	Timestamp string
+	ToolName  string
+	FilePath  string
+	Success   bool
+	Error     string
+}
+
+const toolCallTemplate = `🔨 *Claude Code Hook: Tool Call*
+
+📝 **Event:** {{.EventType}}
+🛠️ **Tool:** {{.ToolName}}
+⏰ **Timestamp:** {{.Timestamp}}
+{{if .FilePath}}📁 **File:** {{.FilePath}}{{end}}
+{{if .Success}}✅ **Status:** Success{{else}}❌ **Status:** Failed{{end}}
+{{if .Error}}⚠️ **Error:** {{.Error}}{{end}}`
+
 func NewToolCallHandler(telegramClient *telegram.Client) *ToolCallHandler {
 	return &ToolCallHandler{
 		telegramClient: telegramClient,
 	}
 }
+
 
 func (h *ToolCallHandler) Handle(ctx context.Context, hookEvent string) error {
 	var event ToolCallEvent
@@ -34,7 +53,7 @@ func (h *ToolCallHandler) Handle(ctx context.Context, hookEvent string) error {
 		return err
 	}
 
-	templateData := templates.TemplateData{
+	templateData := ToolCallTemplateData{
 		EventType: event.EventType,
 		Timestamp: event.Timestamp.Format("2006-01-02 15:04:05"),
 		ToolName:  event.ToolName,
@@ -43,7 +62,7 @@ func (h *ToolCallHandler) Handle(ctx context.Context, hookEvent string) error {
 		Error:     event.Error,
 	}
 
-	message, err := templates.RenderTemplate(templates.ToolCallTemplate, templateData)
+	message, err := templates.RenderTemplate("toolCall", toolCallTemplate, templateData)
 	if err != nil {
 		return err
 	}

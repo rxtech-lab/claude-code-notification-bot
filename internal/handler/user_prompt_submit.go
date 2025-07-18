@@ -21,11 +21,28 @@ type UserPromptSubmitEvent struct {
 	FilePath  string    `json:"file_path,omitempty"`
 }
 
+type UserPromptSubmitTemplateData struct {
+	EventType string
+	Timestamp string
+	Message   string
+	ToolUsed  string
+	FilePath  string
+}
+
+const userPromptSubmitTemplate = `🤖 *Claude Code Hook: User Prompt Submit*
+
+📝 **Event:** {{.EventType}}
+⏰ **Timestamp:** {{.Timestamp}}
+{{if .ToolUsed}}🔧 **Tool Used:** {{.ToolUsed}}{{end}}
+{{if .Message}}💬 **Message:** {{.Message}}{{end}}
+{{if .FilePath}}📁 **File:** {{.FilePath}}{{end}}`
+
 func NewUserPromptSubmitHandler(telegramClient *telegram.Client) *UserPromptSubmitHandler {
 	return &UserPromptSubmitHandler{
 		telegramClient: telegramClient,
 	}
 }
+
 
 func (h *UserPromptSubmitHandler) Handle(ctx context.Context, hookEvent string) error {
 	var event UserPromptSubmitEvent
@@ -33,7 +50,7 @@ func (h *UserPromptSubmitHandler) Handle(ctx context.Context, hookEvent string) 
 		return err
 	}
 
-	templateData := templates.TemplateData{
+	templateData := UserPromptSubmitTemplateData{
 		EventType: event.EventType,
 		Timestamp: event.Timestamp.Format("2006-01-02 15:04:05"),
 		Message:   event.Message,
@@ -41,7 +58,7 @@ func (h *UserPromptSubmitHandler) Handle(ctx context.Context, hookEvent string) 
 		FilePath:  event.FilePath,
 	}
 
-	message, err := templates.RenderTemplate(templates.UserPromptSubmitTemplate, templateData)
+	message, err := templates.RenderTemplate("userPromptSubmit", userPromptSubmitTemplate, templateData)
 	if err != nil {
 		return err
 	}

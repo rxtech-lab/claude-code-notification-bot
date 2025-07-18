@@ -8,6 +8,13 @@ import (
 )
 
 func main() {
+	// Check if stdin is available
+	stat, _ := os.Stdin.Stat()
+	if (stat.Mode() & os.ModeCharDevice) != 0 {
+		// Stdin is a terminal (no piped input), exit
+		os.Exit(1)
+	}
+
 	// Read bot token from environment
 	botToken := os.Getenv("CLAUDE_CODE_TELEGRAM_BOT_TOKEN")
 	if botToken == "" {

@@ -15,13 +15,28 @@ type NotificationHandler struct {
 }
 
 type NotificationEvent struct {
-	EventType string                 `json:"event_type"`
-	Timestamp time.Time              `json:"timestamp"`
-	Message   string                 `json:"message,omitempty"`
-	Level     string                 `json:"level,omitempty"`
-	Source    string                 `json:"source,omitempty"`
-	Data      map[string]interface{} `json:"data,omitempty"`
+	SessionID      string `json:"session_id"`
+	TranscriptPath string `json:"transcript_path"`
+	Cwd            string `json:"cwd"`
+	HookEventName  string `json:"hook_event_name"`
+	Message        string `json:"message"`
 }
+
+type NotificationTemplateData struct {
+	EventType      string
+	Timestamp      string
+	Message        string
+	SessionID      string
+	TranscriptPath string
+	Cwd            string
+}
+
+const notificationTemplate = `🔔 *Claude Code Notification*
+
+📝 **Event:** {{.EventType}}
+⏰ **Timestamp:** {{.Timestamp}}
+💬 **Message:** {{.Message}}
+📁 **Working Directory:** {{.Cwd}}`
 
 func NewNotificationHandler(telegramClient *telegram.Client) *NotificationHandler {
 	return &NotificationHandler{
@@ -36,14 +51,16 @@ func (h *NotificationHandler) Handle(ctx context.Context, hookEvent string) erro
 	}
 
 	log.Println("Received notification event:", event)
-	templateData := templates.TemplateData{
-		EventType: event.EventType,
-		Timestamp: event.Timestamp.Format("2006-01-02 15:04:05"),
-		Message:   event.Message,
-		Data:      event.Data,
+	templateData := NotificationTemplateData{
+		EventType:      event.HookEventName,
+		Timestamp:      time.Now().Format("2006-01-02 15:04:05"),
+		Message:        event.Message,
+		SessionID:      event.SessionID,
+		TranscriptPath: event.TranscriptPath,
+		Cwd:            event.Cwd,
 	}
 
-	message, err := templates.RenderTemplate(templates.NotificationTemplate, templateData)
+	message, err := templates.RenderTemplate("notification", notificationTemplate, templateData)
 	if err != nil {
 		return err
 	}

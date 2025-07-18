@@ -22,6 +22,24 @@ type FileWriteEvent struct {
 	LinesDeleted int       `json:"lines_deleted,omitempty"`
 }
 
+type FileWriteTemplateData struct {
+	EventType    string
+	Timestamp    string
+	FilePath     string
+	Success      bool
+	LinesAdded   int
+	LinesDeleted int
+}
+
+const fileWriteTemplate = `💾 *Claude Code Hook: File Write*
+
+📝 **Event:** {{.EventType}}
+📁 **File:** {{.FilePath}}
+⏰ **Timestamp:** {{.Timestamp}}
+{{if .LinesAdded}}➕ **Lines Added:** {{.LinesAdded}}{{end}}
+{{if .LinesDeleted}}➖ **Lines Deleted:** {{.LinesDeleted}}{{end}}
+{{if .Success}}✅ **Status:** Success{{else}}❌ **Status:** Failed{{end}}`
+
 func NewFileWriteHandler(telegramClient *telegram.Client) *FileWriteHandler {
 	return &FileWriteHandler{
 		telegramClient: telegramClient,
@@ -34,7 +52,7 @@ func (h *FileWriteHandler) Handle(ctx context.Context, hookEvent string) error {
 		return err
 	}
 
-	templateData := templates.TemplateData{
+	templateData := FileWriteTemplateData{
 		EventType:    event.EventType,
 		Timestamp:    event.Timestamp.Format("2006-01-02 15:04:05"),
 		FilePath:     event.FilePath,
@@ -43,7 +61,7 @@ func (h *FileWriteHandler) Handle(ctx context.Context, hookEvent string) error {
 		LinesDeleted: event.LinesDeleted,
 	}
 
-	message, err := templates.RenderTemplate(templates.FileWriteTemplate, templateData)
+	message, err := templates.RenderTemplate("fileWrite", fileWriteTemplate, templateData)
 	if err != nil {
 		return err
 	}
