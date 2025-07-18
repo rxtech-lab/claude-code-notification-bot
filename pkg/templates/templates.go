@@ -51,6 +51,16 @@ var (
 ⌛ **Duration:** {{.Duration}}
 {{if .FilesModified}}📝 **Files Modified:** {{.FilesModified}}{{end}}`
 
+	// Template for notification hook
+	NotificationTemplate = `🔔 *Claude Code Notification*
+
+📝 **Event:** {{.EventType}}
+⏰ **Timestamp:** {{.Timestamp}}
+{{if .Message}}💬 **Message:** {{.Message}}{{end}}
+{{range $key, $value := .Data}}
+**{{$key}}:** {{$value}}
+{{end}}`
+
 	// Generic template for unknown hook types
 	GenericTemplate = `📋 *Claude Code Hook: {{.EventType}}*
 

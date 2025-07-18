@@ -98,6 +98,9 @@ example-session-start: build ## Run example with session-start hook
 example-session-end: build ## Run example with session-end hook
 	@echo '{"event_type":"session-end","timestamp":"2024-01-01T12:00:00Z","duration":"30m","files_modified":5}' | $(BUILD_DIR)/$(BINARY_NAME) session-end
 
+example-notification: build ## Run example with notification hook
+	@echo '{"event_type":"notification","timestamp":"2024-01-01T12:00:00Z","message":"Test notification message","level":"info","source":"claude-code"}' | $(BUILD_DIR)/$(BINARY_NAME) notification
+
 # Docker targets (optional)
 docker-build: ## Build Docker image
 	@echo "Building Docker image..."

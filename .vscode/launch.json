@@ -11,6 +11,15 @@
       "mode": "auto",
       "program": "${workspaceFolder}/cmd/chat-client/main.go",
       "envFile": "${workspaceFolder}/.env"
+    },
+    {
+      "name": "Launch Hook (Notification)",
+      "type": "go",
+      "request": "launch",
+      "mode": "auto",
+      "program": "${workspaceFolder}/cmd/main.go",
+      "envFile": "${workspaceFolder}/.env",
+      "args": ["notification"]
     }
   ]
 }

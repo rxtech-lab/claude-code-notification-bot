@@ -52,12 +52,16 @@ func main() {
 		hookHandler = handler.NewSessionStartHandler(telegramClient)
 	case "session-end":
 		hookHandler = handler.NewSessionEndHandler(telegramClient)
+	case "notification":
+		hookHandler = handler.NewNotificationHandler(telegramClient)
 	default:
-		hookHandler = handler.NewGenericHandler(telegramClient)
+		log.Fatalf("Invalid hook type: %s", hookType)
 	}
 
+	log.Println("Hook handler created:", hookType)
 	// Read hook data from stdin
 	scanner := bufio.NewScanner(os.Stdin)
+	log.Println("Reading hook data from stdin")
 	var lines []string
 	for scanner.Scan() {
 		lines = append(lines, scanner.Text())
@@ -73,6 +77,7 @@ func main() {
 
 	// Join all lines to form the complete JSON
 	hookData := strings.Join(lines, "\n")
+	log.Println("Hook data:", hookData)
 
 	// Handle the hook event
 	ctx := context.Background()
