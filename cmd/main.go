@@ -76,6 +76,8 @@ func main() {
 		hookHandler = handler.NewSessionEndHandler(telegramClient)
 	case "notification":
 		hookHandler = handler.NewNotificationHandler(telegramClient)
+	case "stop":
+		hookHandler = handler.NewStopHandler(telegramClient)
 	default:
 		log.Fatalf("Invalid hook type: %s", hookType)
 	}
@@ -138,7 +140,7 @@ func setupFileLogging() {
 	multiWriter := io.MultiWriter(os.Stdout, logFile)
 	log.SetOutput(multiWriter)
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
-	
+
 	log.Printf("Logging to file: %s", logFilePath)
 }
 
@@ -166,7 +168,7 @@ func showHelp() {
 	fmt.Println()
 	fmt.Println("  Run notification hooks:")
 	fmt.Println("    ./claude-code-telegram-notification [hook_type]")
-	fmt.Println("    Hook types: user-prompt-submit, tool-call, file-write, session-start, session-end, notification")
+	fmt.Println("    Hook types: user-prompt-submit, tool-call, file-write, session-start, session-end, notification, stop")
 	fmt.Println()
 	fmt.Println("  Run chat client:")
 	fmt.Println("    ./claude-code-telegram-notification chat-client")
