@@ -33,10 +33,10 @@ type NotificationTemplateData struct {
 }
 
 const notificationTemplate = `🔔 *Claude Code Notification*
+{{.Message}}
 
 📝 **Event:** {{.EventType}}
 ⏰ **Timestamp:** {{.Timestamp}}
-💬 **Message:** {{.Message}}
 📁 **Working Directory:** {{.Cwd}}`
 
 func NewNotificationHandler(telegramClient *telegram.Client) *NotificationHandler {

@@ -32,10 +32,10 @@ type StopTemplateData struct {
 }
 
 const stopTemplate = `🛑 *Claude Code Session Stopped*
+{{.Message}}
 
 📝 **Event:** {{.EventType}}
 ⏰ **Timestamp:** {{.Timestamp}}
-💬 **Message:** {{.Message}}
 📁 **Working Directory:** {{.Cwd}}`
 
 func NewStopHandler(telegramClient *telegram.Client) *StopHandler {
