@@ -36,8 +36,7 @@ const stopTemplate = `🛑 *Claude Code Session Stopped*
 📝 **Event:** {{.EventType}}
 ⏰ **Timestamp:** {{.Timestamp}}
 💬 **Message:** {{.Message}}
-📁 **Working Directory:** {{.Cwd}}
-🔗 **Session ID:** {{.SessionID}}`
+📁 **Working Directory:** {{.Cwd}}`
 
 func NewStopHandler(telegramClient *telegram.Client) *StopHandler {
 	return &StopHandler{
