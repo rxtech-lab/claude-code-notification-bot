@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/rxtech-lab/claude-code-telegram-notification/internal/telegram"
@@ -48,6 +49,11 @@ func (h *NotificationHandler) Handle(ctx context.Context, hookEvent string) erro
 	var event NotificationEvent
 	if err := json.Unmarshal([]byte(hookEvent), &event); err != nil {
 		return err
+	}
+
+	// skip the message if it's a waiting for input message
+	if strings.Contains(event.Message, "Claude is waiting for your input") {
+		return nil
 	}
 
 	log.Println("Received notification event:", event)
